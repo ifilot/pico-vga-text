@@ -1,0 +1,57 @@
+; RGB Signal Generation Program for VGA Output
+; ------------------------------------------
+; This program handles pixel color output via PIO for VGA signal generation.
+;
+; Program name
+.program rgb
+
+pull block                 ; Pull initial value from FIFO to OSR (executed once)
+mov y, osr                 ; Copy the value from OSR into scratch register Y (stores pixel count per scanline)
+.wrap_target               ; Define loop start point for PIO program
+
+set pins, 0                ; Clear RGB output pins during blanking interval
+mov x, y                   ; Initialize X register as the pixel counter
+
+wait 1 irq 1 [3]           ; Wait for VSync active signal (ensures synchronization, starts 5 cycles after execution)
+
+; Pixel color output loop
+colorout:
+    pull block             ; Pull next color value from FIFO
+    out pins, 4 [4]        ; Output first pixel color to RGB pins
+    out pins, 4 [2]        ; Output next pixel color (slightly delayed for timing alignment)
+    jmp x-- colorout       ; Decrement pixel counter and loop during horizontal active mode
+
+.wrap                      ; Wrap execution back to start
+
+
+% c-sdk {
+static inline void rgb_program_init(PIO pio, uint sm, uint offset, uint pin) {
+
+    // Initialize state machine configuration object with default settings
+    // Auto-generated as <program_name>_program_get_default_config()
+    pio_sm_config c = rgb_program_get_default_config(offset);
+
+    // Map the state machine's SET and OUT pin groups to 4 consecutive pins
+    // The `pin` parameter is the lowest in the range
+    sm_config_set_set_pins(&c, pin, 4);
+    sm_config_set_out_pins(&c, pin, 4);
+
+    // Set clock division (not required here, runs at full speed)
+    // sm_config_set_clkdiv(&c, 5);
+
+    // Initialize the PIO-controlled output pins
+    pio_gpio_init(pio, pin);
+    pio_gpio_init(pio, pin + 1);
+    pio_gpio_init(pio, pin + 2);
+    pio_gpio_init(pio, pin + 3);
+    
+    // Configure the 4 consecutive pins as outputs for the PIO state machine
+    pio_sm_set_consecutive_pindirs(pio, sm, pin, 4, true);
+
+    // Load the configuration and set the initial execution point for the program
+    pio_sm_init(pio, sm, offset, &c);
+
+    // Enable the state machine (commented out to allow manual start in C)
+    // pio_sm_set_enabled(pio, sm, true);
+}
+%}

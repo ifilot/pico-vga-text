@@ -1,0 +1,79 @@
+;
+; VSync generation for VGA driver using Raspberry Pi Pico PIO
+;
+
+; Program name
+.program vsync
+.side_set 1 opt   ; Use optional side-setting to control pin states
+
+; VGA Vertical Sync Timings (based on line count)
+; -------------------------------------------------
+; Front Porch:  10 lines
+; Sync Pulse:    2 lines (LOW signal)
+; Back Porch:   33 lines (adjustable, 32 may be easier to implement)
+; Active Video: 480 lines
+;
+; Total frame period: 525 lines (for 60Hz refresh rate at 31.25kHz HSync)
+;
+
+pull block                        ; Pull frame timing value from FIFO into OSR (only happens once)
+.wrap_target                      ; Define loop start point
+
+; ACTIVE VIDEO PHASE (480 lines)
+mov x, osr                        ; Load value from OSR (FIFO) into register X (stores active video duration)
+activefront:
+    wait 1 irq 0                  ; Wait for horizontal sync (HSync) to go HIGH
+    irq 1                         ; Signal active video mode (optional for synchronization)
+    jmp x-- activefront           ; Loop while decrementing X, remaining in active mode
+
+; FRONT PORCH PHASE (10 lines)
+set y, 9                          ; Load front porch duration into Y register
+frontporch:
+    wait 1 irq 0                  ; Wait for HSync pulse
+    jmp y-- frontporch            ; Loop until Y reaches zero
+
+; SYNC PULSE PHASE (2 lines LOW)
+set pins, 0                       ; Set pin LOW (VSync pulse start)
+wait 1 irq 0                      ; Wait for one HSync cycle
+wait 1 irq 0                      ; Wait for another HSync cycle (2 total lines)
+
+; BACK PORCH PHASE (31 lines)
+set y, 31                         ; Load back porch duration into Y register (adds a cycle delay)
+; set pins, 1                      ; Previously used to set HIGH, now replaced with side-setting
+backporch:
+    wait 1 irq 0   side 1         ; Wait for HSync pulse and set pin HIGH using side-setting
+    jmp y-- backporch             ; Loop until Y reaches zero (back porch ends)
+
+; Final back porch line wait eliminated (33rd line handled in loop)
+.wrap                             ; Wrap execution back to start
+
+
+% c-sdk {
+static inline void vsync_program_init(PIO pio, uint sm, uint offset, uint pin) {
+
+    // Initialize state machine configuration object
+    // Auto-generated as <program_name>_program_get_default_config()
+    pio_sm_config c = vsync_program_get_default_config(offset);
+
+    // Map the state machine's SET pin group to a single pin (VSync output)
+    sm_config_set_set_pins(&c, pin, 1);
+    sm_config_set_sideset_pins(&c, pin);  // Use side-setting for pin control
+
+    // Set clock division (divide system clock by 5 for a 25MHz PIO clock)
+    sm_config_set_clkdiv(&c, 5);
+
+    // Configure the pin as a PIO-controlled output
+    pio_gpio_init(pio, pin);
+    // Optionally initialize another pin for additional sync signals
+    // pio_gpio_init(pio, pin+1);
+    
+    // Set the pin as an output controlled by the PIO state machine
+    pio_sm_set_consecutive_pindirs(pio, sm, pin, 1, true);
+
+    // Load the configured settings and set the state machine's initial program counter
+    pio_sm_init(pio, sm, offset, &c);
+
+    // Enable the state machine (commented out to allow synchronization with HSync)
+    // pio_sm_set_enabled(pio, sm, true);
+}
+%}

@@ -1,0 +1,11 @@
+.idea
+.vscode
+_deps
+cmake-*
+build-firmware
+build
+.DS_Store
+*.pdf
+build-*
+*.step
+*.lck

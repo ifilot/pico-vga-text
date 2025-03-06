@@ -1,0 +1,70 @@
+;
+; HSync generation for VGA driver using Raspberry Pi Pico PIO
+;
+
+; Program name
+.program hsync
+
+; VGA Horizontal Sync Timings (based on 25MHz PIO clock)
+; -----------------------------------------------------
+; Front Porch:  16 clocks  (0.64µs at 25MHz)
+; Sync Pulse:   96 clocks  (3.84µs at 25MHz, LOW signal)
+; Back Porch:   48 clocks  (1.92µs at 25MHz)
+; Active Video: 640 clocks (25.6µs at 25MHz)
+;
+; Total scanline period: 800 clocks (32µs per line at 31.25kHz)
+; - High (active + front porch): 704 cycles (28.16µs)
+; - Low  (sync pulse): 96 cycles (3.84µs)
+;
+
+pull block              ; Pull timing value from FIFO to OSR (executed once at start)
+.wrap_target            ; Define loop start point for PIO program
+
+; ACTIVE VIDEO + FRONT PORCH PHASE
+mov x, osr              ; Load value from OSR (FIFO) into register X (stores active + front porch duration)
+activeporch:
+   jmp x-- activeporch  ; Loop while X decrements to 0 (staying HIGH during active video and front porch)
+
+; SYNC PULSE PHASE (LOW state for 96 cycles)
+pulse:
+    set pins, 0 [31]    ; Set pin LOW for 32 cycles
+    set pins, 0 [31]    ; Set pin LOW for another 32 cycles (64 total)
+    set pins, 0 [31]    ; Set pin LOW for another 32 cycles (96 total)
+
+; BACK PORCH PHASE (returning to HIGH state)
+backporch:
+    set pins, 1 [31]    ; Set pin HIGH for 32 cycles
+    set pins, 1 [12]    ; Set pin HIGH for additional 13 cycles (45 total)
+    irq 0       [1]     ; Raise IRQ 0 to signal end of scanline (47 cycles total)
+
+.wrap                   ; Wrap back to the start of the loop
+
+
+% c-sdk {
+static inline void hsync_program_init(PIO pio, uint sm, uint offset, uint pin) {
+
+    // Initialize state machine configuration object
+    // This function is auto-generated as <program_name>_program_get_default_config()
+    pio_sm_config c = hsync_program_get_default_config(offset);
+
+    // Map the state machine's SET pin group to a single pin (the `pin` parameter)
+    sm_config_set_set_pins(&c, pin, 1);
+
+    // Set clock division (divide system clock by 5 for a 25MHz PIO clock)
+    sm_config_set_clkdiv(&c, 5);
+
+    // Configure the pin as a PIO-controlled output
+    pio_gpio_init(pio, pin);
+    // Optionally initialize another pin for dual-signal outputs
+    // pio_gpio_init(pio, pin+1);
+    
+    // Set the pin as an output controlled by the PIO state machine
+    pio_sm_set_consecutive_pindirs(pio, sm, pin, 1, true);
+
+    // Load the configured settings and set the state machine's initial program counter
+    pio_sm_init(pio, sm, offset, &c);
+
+    // Enable the state machine (commented out to allow synchronization with vsync)
+    // pio_sm_set_enabled(pio, sm, true);
+}
+%}
