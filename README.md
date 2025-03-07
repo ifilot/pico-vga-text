@@ -8,6 +8,7 @@ via a single 8-bit interface latch and provides debugging via UART.
 ## Features
 
 - **Resolution**: 640 x 480 pixels
+- **Font**: Original Philips P2000C 12x8 bitmap font
 - **Color Depth**: 4-bit (16 colors)
 - **Refresh Rate**: ~72 Hz (using a 150 MHz clock with a x5 clock divider)
 - **Interface**: Single 8-bit latch for display control
