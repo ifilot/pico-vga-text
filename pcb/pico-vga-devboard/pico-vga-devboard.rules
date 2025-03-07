@@ -1,0 +1,84 @@
+
+(rules PCB pico-vga-devboard
+  (snap_angle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (fanout off)
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    (start_pass_no 2386)
+    (layer_rule F.Cu
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.4)
+    )
+    (layer_rule B.Cu
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.7)
+    )
+  )
+  (rule
+    (width 200.0)
+    (clear 200.0)
+    (clear 100.0 (type smd_to_turn_gap))
+    (clear 50.0 (type smd_smd))
+  )
+  (padstack "Via[0-1]_600:300_um"
+    (shape
+      (circle F.Cu 600.0 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 600.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    "Via[0-1]_600:300_um" "Via[0-1]_600:300_um" default
+  )
+  (via 
+    "Via[0-1]_600:300_um-kicad_default" "Via[0-1]_600:300_um" "kicad_default"
+  )
+  (via_rule
+    default "Via[0-1]_600:300_um"
+  )
+  (via_rule
+    "kicad_default" "Via[0-1]_600:300_um-kicad_default"
+  )
+  (class default
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 200.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+  (class "kicad_default"
+    +3V3 D0 LD0 D1 LD1 LD2 D2 LD3
+    D3 D4 LD4 D5 LD5 D6 LD6 LD7
+    D7 "L_LATCH" LATCH "L_RX" TX RUN +5V GND
+    "L_TX" R "Net-(U1-GPIO21)" "Net-(U1-GPIO20)" B "Net-(U1-GPIO19)" G "Net-(U1-GPIO18)"
+    "unconnected-(U1-GPIO3-Pad5)" "unconnected-(U1-ADC_VREF-Pad35)" "unconnected-(U1-3V3_EN-Pad37)" "unconnected-(U1-SWCLK-Pad41)" "unconnected-(U1-ADC_VREF-Pad35)_0" "unconnected-(U1-GPIO26_ADC0-Pad31)" "unconnected-(U1-VSYS-Pad39)" "unconnected-(U1-GPIO5-Pad7)"
+    "unconnected-(U1-GPIO28_ADC2-Pad34)" "unconnected-(U1-GPIO4-Pad6)" "unconnected-(U1-3V3_EN-Pad37)_0" "unconnected-(U1-SWDIO-Pad43)" "unconnected-(U1-GPIO27_ADC1-Pad32)" "unconnected-(U1-GPIO3-Pad5)_0" "unconnected-(U1-GPIO6-Pad9)" "unconnected-(U1-GPIO22-Pad29)"
+    VSYNC "unconnected-(U1-GPIO7-Pad10)" HSYNC "unconnected-(U1-GPIO6-Pad9)_0" "unconnected-(U1-GPIO4-Pad6)_0" "unconnected-(U1-VSYS-Pad39)_0" "unconnected-(U1-GPIO26_ADC0-Pad31)_0" "unconnected-(U1-GPIO5-Pad7)_0"
+    "unconnected-(U1-GPIO28_ADC2-Pad34)_0" "unconnected-(U1-SWCLK-Pad41)_0" "unconnected-(U1-SWDIO-Pad43)_0" "unconnected-(U1-GPIO7-Pad10)_0" "unconnected-(U1-GPIO22-Pad29)_0" "unconnected-(U1-GPIO27_ADC1-Pad32)_0" "unconnected-(J2-Pad15)" "unconnected-(J2-Pad9)"
+    "unconnected-(J2-Pad4)" "unconnected-(J2-Pad12)" "unconnected-(J2-Pad11)"
+    (clearance_class "kicad_default")
+    (via_rule kicad_default)
+    (rule
+      (width 200.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+)
