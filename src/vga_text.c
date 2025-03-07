@@ -1,12 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <pico/stdlib.h>
-#include <hardware/pio.h>
-#include <hardware/dma.h>
-
-#include "hsync.pio.h"
-#include "vsync.pio.h"
-#include "rgb.pio.h"
 #include "vga_text.h"
 
 #include "font.c"
@@ -60,7 +51,7 @@ void initVGA() {
     // and is of the form <program name_program>
     uint hsync_offset = pio_add_program(pio, &hsync_program);
     uint vsync_offset = pio_add_program(pio, &vsync_program);
-    uint rgb_offset = pio_add_program(pio, &rgb_program);
+    uint rgb_offset =   pio_add_program(pio, &rgb_program);
 
     // Manually select a few state machines from pio instance pio0.
     uint hsync_sm = 0;
@@ -79,7 +70,10 @@ void initVGA() {
     // ============================== PIO DMA Channels =================================================
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    // DMA channels - 0 sends color data, 1 reconfigures and restarts 0
+    // DMA channels
+    // 0 sends color data
+    // 1 reconfigures and restarts 0
+    // 2 latches data
     int rgb_chan_0 = dma_claim_unused_channel(true);
     int rgb_chan_1 = dma_claim_unused_channel(true);
 
@@ -137,6 +131,10 @@ void initVGA() {
     // To change the contents of the screen, we need only change the contents
     // of that array.
     dma_start_channel_mask((1u << rgb_chan_0));
+}
+
+void clear_screen() {
+    memset(vga_data_array, 0x00, TXCOUNT);
 }
 
 // Function to draw a pixel on the screen with a specified color.

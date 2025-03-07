@@ -1,0 +1,28 @@
+.program latch
+loop:
+    wait 1 gpio 2 [10]    ; Wait for latch signal to go HIGH (rising edge)
+    in pins, 8            ; Read 8-bit data from input pins (GPIO 8-15)
+    wait 0 gpio 2 [10]    ; Debounce and wait for stable LOW signal
+
+% c-sdk {
+static inline void latch_program_init(PIO pio, uint sm, uint offset, uint latch_pin, uint data_base_pin) {
+
+    pio_sm_config c = latch_program_get_default_config(offset);
+
+    // Configure data pins as inputs (8-bit)
+    pio_gpio_init(pio, latch_pin);
+    pio_sm_set_consecutive_pindirs(pio, sm, latch_pin, 1, false);
+
+    // Configure the 8-bit input shift register
+    for(uint i=0; i<8; i++) {pio_gpio_init(pio, data_base_pin + i);}
+    pio_sm_set_consecutive_pindirs(pio, sm, data_base_pin, 8, false);
+    sm_config_set_in_pins(&c, data_base_pin);
+
+    // Enable auto-push (FIFO) after 8 bits are read
+    sm_config_set_in_shift(&c, false, true, 8);
+
+    // Apply configuration and start the state machine
+    pio_sm_init(pio, sm, offset, &c);
+    pio_sm_set_enabled(pio, sm, true);
+}
+%}

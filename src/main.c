@@ -37,9 +37,10 @@
 #include <string.h>
 
 #include "vga_text.h"
+#include "latch.pio.h"
 #include "protothreads.h"
  
-char user_string;
+char ch;
 int newchar = 1;
 
 // ==================================================
@@ -54,13 +55,18 @@ static PT_THREAD(protothread_graphics(struct pt *pt)) {
     while (true) {
         // Draw new character if received
         if (newchar) {
-            newchar = false;
             
-            if(user_string == '\n') {
+            if(posy + CHARHEIGHT >= SCREENHEIGHT) {
+                clear_screen();
+                posy = 0;
+                posx = 0;
+            }
+
+            if(ch == '\n') {
                 posy += CHARHEIGHT;
                 posx = 0;
             } else {
-                drawChar(posx, posy, user_string, DARK_ORANGE, BLACK);
+                drawChar(posx, posy, ch, DARK_ORANGE, BLACK);
 
                 posx += 8;
                 if (posx >= SCREENWIDTH-1) {
@@ -68,6 +74,9 @@ static PT_THREAD(protothread_graphics(struct pt *pt)) {
                     posy += CHARHEIGHT;
                 }
             }
+
+            // only release when char is done
+            newchar = false;
         }
 
         // Yield to allow other threads to run
@@ -104,17 +113,43 @@ static PT_THREAD(protothread_toggle25(struct pt *pt)) {
 // ==================================================
 static PT_THREAD(protothread_serial(struct pt *pt)) {
     PT_BEGIN(pt);
-    while (1) {
+    while (true) {
         // Spawn a thread to handle non-blocking serial write
         serial_write;
 
         // Spawn a thread to handle non-blocking serial read
         serial_read;
 
-        // Process received character
-        if (pt_serial_in_buffer != 0) {
-            user_string = pt_serial_in_buffer;
+        PT_YIELD(pt);
+    }
+    PT_END(pt);
+}
+
+// ==================================================
+//            Latch Input Thread (Core 1) 
+// ==================================================
+static PT_THREAD(protothread_latch(struct pt *pt)) {
+    PT_BEGIN(pt);
+
+    // Choose PIO and state machine
+    PIO pio = pio1;
+    uint sm = 0;
+
+    // Define latch pin (GPIO 2) and data pins (GPIO 8-15)
+    const uint latch_pin = 2;
+    const uint data_base_pin = 8;
+
+    // Initialize PIO program
+    uint offset = pio_add_program(pio, &latch_program);
+    latch_program_init(pio, sm, offset, latch_pin, data_base_pin);
+
+    // Main loop to continuously read and display captured data
+    while (true) {
+        if(!pio_sm_is_rx_fifo_empty(pio, sm) && !newchar) {
+            ch = pio_sm_get(pio, sm);
             newchar = true;
+        } else {
+            PT_YIELD(pt);
         }
     }
     PT_END(pt);
@@ -125,6 +160,7 @@ static PT_THREAD(protothread_serial(struct pt *pt)) {
 // ==================================================
 void core1_main() {
     pt_add_thread(protothread_serial);
+    pt_add_thread(protothread_latch);
     pt_schedule_start;
     // Never exits
 }
