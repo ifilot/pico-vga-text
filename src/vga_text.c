@@ -44,10 +44,6 @@ char *address_pointer = &vga_data_array[0];
 // For accessing the font library
 #define pgm_read_byte(addr) (*(const unsigned char *)(addr))
 
-// Screen width/height
-#define _width 640
-#define _height 480
-
 void initVGA() {
     // Choose which PIO instance to use (there are two instances, each with 4 state machines)
     PIO pio = pio0;
@@ -167,14 +163,14 @@ void drawChar(short x, short y, unsigned char c, char color, char bg) {
     char i, j;
 
     // loop over rows
-    for (i = 0; i < 8; i++) {
+    for (i = 0; i < CHARHEIGHT; i++) {
         unsigned char line;
 
         // Fetch character pixel data from font array
-        if (i == 8) {// Extra column for spacing
+        if (i == CHARHEIGHT) {// Extra column for spacing
             line = 0x00;
         } else {
-            line = pgm_read_byte(font + (c * 8) + i);
+            line = pgm_read_byte(font + (c * CHARHEIGHT) + i);
         }
 
         // Loop through each column of the character (8 columns per character)

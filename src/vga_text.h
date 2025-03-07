@@ -19,6 +19,13 @@
  *
  */
 
+#ifndef _VGA_TEXT_H
+#define _VGA_TEXT_H
+
+// Screen width/height
+#define SCREENWIDTH 640
+#define SCREENHEIGHT 480
+#define CHARHEIGHT 12
 
 // Give the I/O pins that we're using some names that make sense - usable in main()
 enum vga_pins {HSYNC=16, VSYNC, LO_GRN, HI_GRN, BLUE_PIN, RED_PIN} ;
@@ -33,3 +40,5 @@ enum colors {BLACK, DARK_GREEN, MED_GREEN, GREEN,
 void initVGA(void) ;
 void drawPixel(short x, short y, char color) ;
 void drawChar(short x, short y, unsigned char c, char color, char bg) ;
+
+#endif // _VGA_TEXT_H

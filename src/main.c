@@ -57,15 +57,15 @@ static PT_THREAD(protothread_graphics(struct pt *pt)) {
             newchar = false;
             
             if(user_string == '\n') {
-                posy += 8;
+                posy += CHARHEIGHT;
                 posx = 0;
             } else {
                 drawChar(posx, posy, user_string, DARK_ORANGE, BLACK);
 
                 posx += 8;
-                if (posx >= 640) {
+                if (posx >= SCREENWIDTH-1) {
                     posx = 0;
-                    posy += 8;
+                    posy += CHARHEIGHT;
                 }
             }
         }

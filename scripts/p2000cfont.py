@@ -12,7 +12,7 @@ img_array = np.array(img_gray)
 # Define character grid
 num_chars = 128  # Extract 128 characters
 box_w, box_h = 12, 12
-char_w, char_h = 8, 8  # Each character is 8x8 pixels
+char_w, char_h = 8, 12  # Each character is 8x8 pixels
 
 # Create an array to store the extracted characters (128 x 8 bytes)
 char_data = np.zeros((num_chars, char_h), dtype=np.uint8)
@@ -37,11 +37,11 @@ for i in range(num_chars):
         char_data[i, y] = byte_val
 
 # Save extracted character data as binary file
-char_data.tofile("p2000c_font_128x8.bin")
+char_data.tofile("p2000c_font_128x12.bin")
 
 def generate_c_font_file(binary_file, output_c_file):
     # Load binary font data
-    font_data = np.fromfile(binary_file, dtype=np.uint8).reshape((128, 8))
+    font_data = np.fromfile(binary_file, dtype=np.uint8).reshape((128, 12))
 
     # Open the C file for writing
     with open(output_c_file, "w") as f:
@@ -58,6 +58,6 @@ def generate_c_font_file(binary_file, output_c_file):
         f.write("#endif\n")
 
 # Example usage:
-binary_file = "p2000c_font_128x8.bin"
+binary_file = "p2000c_font_128x12.bin"
 output_c_file = "../src/font.c"
 generate_c_font_file(binary_file, output_c_file)
