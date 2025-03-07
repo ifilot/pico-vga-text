@@ -33,6 +33,8 @@
 #include <hardware/dma.h>
 #include <hardware/sync.h>
 #include <hardware/timer.h>
+#include <hardware/pwm.h>
+#include <hardware/clocks.h>
 #include <pico/multicore.h>
 #include <string.h>
 
@@ -41,7 +43,9 @@
 #include "protothreads.h"
  
 char ch;
-int newchar = 1;
+bool flag_latch = false;
+bool flag_beep = false;
+bool flag_beeping = false;
 
 // ==================================================
 // === VGA Graphics Thread (Core 0) ===
@@ -61,7 +65,7 @@ static PT_THREAD(protothread_graphics(struct pt *pt)) {
 
     while (true) {
         // Draw new character if received
-        if (newchar) {
+        if (flag_latch) {
             
             if(ch >= 0x80) {  // check for control bytes
                 switch(ch) {
@@ -161,10 +165,14 @@ static PT_THREAD(protothread_graphics(struct pt *pt)) {
                     case 0x9F:
                         bg_color = WHITE;
                     break;
+                    case 0xA0:
+                        flag_beep = true;
+                    break;
                     case 0xFF:
                         clear_screen();
                         posy = 0;
                         posx = 0;
+                        flag_beep = false;
                     break;
                 }
             } else {
@@ -189,7 +197,7 @@ static PT_THREAD(protothread_graphics(struct pt *pt)) {
             }
 
             // only release when char is done
-            newchar = false;
+            flag_latch = false;
         }
 
         // Yield to allow other threads to run
@@ -226,6 +234,7 @@ static PT_THREAD(protothread_toggle25(struct pt *pt)) {
 // ==================================================
 static PT_THREAD(protothread_serial(struct pt *pt)) {
     PT_BEGIN(pt);
+
     while (true) {
         // Spawn a thread to handle non-blocking serial write
         serial_write;
@@ -258,12 +267,53 @@ static PT_THREAD(protothread_latch(struct pt *pt)) {
 
     // Main loop to continuously read and display captured data
     while (true) {
-        if(!pio_sm_is_rx_fifo_empty(pio, sm) && !newchar) {
+        if(!pio_sm_is_rx_fifo_empty(pio, sm) && !flag_latch) {
             ch = pio_sm_get(pio, sm);
-            newchar = true;
+            flag_latch = true;
         } else {
             PT_YIELD(pt);
         }
+    }
+    PT_END(pt);
+}
+
+// ==================================================
+//            Latch Input Thread (Core 1) 
+// ==================================================
+static PT_THREAD(protothread_beeper(struct pt *pt)) {
+    PT_BEGIN(pt);
+
+    static uint64_t start_time;
+
+    uint buzzer_pin = 3;
+    uint freq = 726;
+    float duty_cycle = 0.2;
+
+    gpio_set_function(buzzer_pin, GPIO_FUNC_PWM);  // Set GPIO to PWM mode
+    uint slice = pwm_gpio_to_slice_num(buzzer_pin);  // Get PWM slice
+    uint channel = pwm_gpio_to_channel(buzzer_pin);  // Get PWM channel
+
+    uint32_t clkdiv = 50; // Clock divider (adjustable for fine tuning)
+    uint32_t wrap = (clock_get_hz(clk_sys) / (clkdiv * freq)) - 1;
+    
+    pwm_set_clkdiv(slice, clkdiv);  // Set clock divider
+    pwm_set_wrap(slice, wrap);  // Set PWM frequency
+    pwm_set_chan_level(slice, channel, (uint16_t)(wrap * duty_cycle));  // Set duty cycle
+
+    // Main loop to continuously read and display captured data
+    while (true) {
+        PT_YIELD_UNTIL(pt, flag_beep && !flag_beeping);
+            flag_beep = false;
+            flag_beeping = true;
+            start_time = time_us_64(); 
+            pwm_set_enabled(slice, true);  // Enable PWM
+            printf("Start beeper...\n");
+
+        PT_YIELD_UNTIL(pt, flag_beeping && ((time_us_64() - start_time) >= (200 * 1000)));
+
+            printf("Finished waiting!\n");
+            pwm_set_enabled(slice, false);
+            flag_beeping = false;
     }
     PT_END(pt);
 }
@@ -274,6 +324,7 @@ static PT_THREAD(protothread_latch(struct pt *pt)) {
 void core1_main() {
     pt_add_thread(protothread_serial);
     pt_add_thread(protothread_latch);
+    pt_add_thread(protothread_beeper);
     pt_schedule_start;
     // Never exits
 }
@@ -284,7 +335,7 @@ void core1_main() {
 int main() {
     // Initialize standard I/O
     stdio_init_all();
-    printf("\nVGA ready\n");
+    printf("\nPICO2 VGA INITIALIZED\n");
 
     // Initialize VGA display
     initVGA();

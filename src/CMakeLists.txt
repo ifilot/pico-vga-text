@@ -39,7 +39,8 @@ target_link_libraries(pico_firmware_vga PRIVATE
 	pico_bootsel_via_double_reset 
 	hardware_pio 
 	hardware_dma 
-	hardware_adc 
+	hardware_adc
+	hardware_pwm 
 	hardware_sync
 	hardware_irq
 	pico_multicore
