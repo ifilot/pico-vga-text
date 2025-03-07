@@ -1,3 +1,7 @@
+;
+; Latch PIO to load 8-bits of data via a single LATCH pin
+;
+
 .program latch
 loop:
     wait 1 gpio 2 [10]    ; Wait for latch signal to go HIGH (rising edge)

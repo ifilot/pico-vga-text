@@ -2,12 +2,12 @@
 ; VSync generation for VGA driver using Raspberry Pi Pico PIO
 ;
 
-; Program name
 .program vsync
 .side_set 1 opt   ; Use optional side-setting to control pin states
 
+;
 ; VGA Vertical Sync Timings (based on line count)
-; -------------------------------------------------
+;
 ; Front Porch:  10 lines
 ; Sync Pulse:    2 lines (LOW signal)
 ; Back Porch:   33 lines (adjustable, 32 may be easier to implement)
@@ -59,7 +59,7 @@ static inline void vsync_program_init(PIO pio, uint sm, uint offset, uint pin) {
     sm_config_set_set_pins(&c, pin, 1);
     sm_config_set_sideset_pins(&c, pin);  // Use side-setting for pin control
 
-    // Set clock division (divide system clock by 5 for a 25MHz PIO clock)
+    // Set clock division (divide system clock by 5 for a 30MHz PIO clock)
     sm_config_set_clkdiv(&c, 5);
 
     // Configure the pin as a PIO-controlled output

@@ -2,11 +2,11 @@
 ; HSync generation for VGA driver using Raspberry Pi Pico PIO
 ;
 
-; Program name
 .program hsync
 
+;
 ; VGA Horizontal Sync Timings (based on 25MHz PIO clock)
-; -----------------------------------------------------
+;
 ; Front Porch:  16 clocks  (0.64µs at 25MHz)
 ; Sync Pulse:   96 clocks  (3.84µs at 25MHz, LOW signal)
 ; Back Porch:   48 clocks  (1.92µs at 25MHz)
@@ -50,7 +50,7 @@ static inline void hsync_program_init(PIO pio, uint sm, uint offset, uint pin) {
     // Map the state machine's SET pin group to a single pin (the `pin` parameter)
     sm_config_set_set_pins(&c, pin, 1);
 
-    // Set clock division (divide system clock by 5 for a 25MHz PIO clock)
+    // Set clock division (divide system clock by 5 for a 30MHz PIO clock)
     sm_config_set_clkdiv(&c, 5);
 
     // Configure the pin as a PIO-controlled output
