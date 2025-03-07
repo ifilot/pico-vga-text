@@ -20,16 +20,24 @@ void send_char(char val, unsigned int delay) {
 
 void loop() {
   static uint8_t val = ' ';
+  const uint8_t delay = 120;
 
-  for(char val=' '; val <= '~'; val++) {
-    send_char(val, 120);
+  send_char(0xFF, 120); // send clear screen
+  send_char(0x90, 120); // send background black
+  for(uint8_t i=0x81; i<=0x8F; i++) {
+    send_char(i, delay);  // send color control character
+    for(char val=' '; val <= '~'; val++) {
+      send_char(val, delay);
+    }
   }
-  send_char('\n', 200);
 
-  for(char val=' '; val <= '~'; val++) {
-    send_char(val, 200);
+  send_char(0x80, 120); // send foreground black
+  for(uint8_t i=0x91; i<=0x9F; i++) {
+    send_char(i, delay);  // send color control character
+    for(char val=' '; val <= '~'; val++) {
+      send_char(val, delay);
+    }
   }
-  send_char('\n', 200);
 
-  delay(100);
+  _delay_ms(5000);
 }

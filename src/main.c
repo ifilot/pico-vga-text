@@ -51,27 +51,140 @@ static PT_THREAD(protothread_graphics(struct pt *pt)) {
 
     static short posx = 0;
     static short posy = 0;
+    static char fg_color = WHITE;
+    static char bg_color = BLACK;
+
+    enum colors {BLACK, DARK_GREEN, MED_GREEN, GREEN,
+        DARK_BLUE, BLUE, LIGHT_BLUE, CYAN,
+        RED, DARK_ORANGE, ORANGE, YELLOW, 
+        MAGENTA, PINK, LIGHT_PINK, WHITE} ;
 
     while (true) {
         // Draw new character if received
         if (newchar) {
             
-            if(posy + CHARHEIGHT >= SCREENHEIGHT) {
-                clear_screen();
-                posy = 0;
-                posx = 0;
-            }
-
-            if(ch == '\n') {
-                posy += CHARHEIGHT;
-                posx = 0;
+            if(ch >= 0x80) {  // check for control bytes
+                switch(ch) {
+                    case 0x80:
+                        fg_color = BLACK;
+                    break;
+                    case 0x81:
+                        fg_color = DARK_GREEN;
+                    break;
+                    case 0x82:
+                        fg_color = MED_GREEN;
+                    break;
+                    case 0x83:
+                        fg_color = GREEN;
+                    break;
+                    case 0x84:
+                        fg_color = DARK_BLUE;
+                    break;
+                    case 0x85:
+                        fg_color = BLUE;
+                    break;
+                    case 0x86:
+                        fg_color = LIGHT_BLUE;
+                    break;
+                    case 0x87:
+                        fg_color = CYAN;
+                    break;
+                    case 0x88:
+                        fg_color = RED;
+                    break;
+                    case 0x89:
+                        fg_color = DARK_ORANGE;
+                    break;
+                    case 0x8A:
+                        fg_color = ORANGE;
+                    break;
+                    case 0x8B:
+                        fg_color = YELLOW;
+                    break;
+                    case 0x8C:
+                        fg_color = MAGENTA;
+                    break;
+                    case 0x8D:
+                        fg_color = PINK;
+                    break;
+                    case 0x8E:
+                        fg_color = LIGHT_PINK;
+                    break;
+                    case 0x8F:
+                        fg_color = WHITE;
+                    break;
+                    case 0x90:
+                        bg_color = BLACK;
+                    break;
+                    case 0x91:
+                        bg_color = DARK_GREEN;
+                    break;
+                    case 0x92:
+                        bg_color = MED_GREEN;
+                    break;
+                    case 0x93:
+                        bg_color = GREEN;
+                    break;
+                    case 0x94:
+                        bg_color = DARK_BLUE;
+                    break;
+                    case 0x95:
+                        bg_color = BLUE;
+                    break;
+                    case 0x96:
+                        bg_color = LIGHT_BLUE;
+                    break;
+                    case 0x97:
+                        bg_color = CYAN;
+                    break;
+                    case 0x98:
+                        bg_color = RED;
+                    break;
+                    case 0x99:
+                        bg_color = DARK_ORANGE;
+                    break;
+                    case 0x9A:
+                        bg_color = ORANGE;
+                    break;
+                    case 0x9B:
+                        bg_color = YELLOW;
+                    break;
+                    case 0x9C:
+                        bg_color = MAGENTA;
+                    break;
+                    case 0x9D:
+                        bg_color = PINK;
+                    break;
+                    case 0x9E:
+                        bg_color = LIGHT_PINK;
+                    break;
+                    case 0x9F:
+                        bg_color = WHITE;
+                    break;
+                    case 0xFF:
+                        clear_screen();
+                        posy = 0;
+                        posx = 0;
+                    break;
+                }
             } else {
-                drawChar(posx, posy, ch, DARK_ORANGE, BLACK);
-
-                posx += 8;
-                if (posx >= SCREENWIDTH-1) {
+                if(posy + CHARHEIGHT >= SCREENHEIGHT) {
+                    clear_screen();
+                    posy = 0;
                     posx = 0;
+                }
+    
+                if(ch == '\n') {
                     posy += CHARHEIGHT;
+                    posx = 0;
+                } else {
+                    drawChar(posx, posy, ch, fg_color, bg_color);
+    
+                    posx += 8;
+                    if (posx >= SCREENWIDTH-1) {
+                        posx = 0;
+                        posy += CHARHEIGHT;
+                    }
                 }
             }
 
