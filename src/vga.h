@@ -16,8 +16,8 @@
  *
  */
 
-#ifndef _VGA_TEXT_H
-#define _VGA_TEXT_H
+#ifndef _VGA_H
+#define _VGA_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -108,4 +108,6 @@ void draw_pixel(short x, short y, char color) ;
  */
 void draw_character(short x, short y, unsigned char c, char color, char bg) ;
 
-#endif // _VGA_TEXT_H
+void draw_pixel_from_word(uint32_t pixelword);
+
+#endif // _VGA_H

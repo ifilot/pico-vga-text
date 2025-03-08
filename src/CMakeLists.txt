@@ -30,7 +30,7 @@ pico_generate_pio_header(picobeam ${CMAKE_CURRENT_LIST_DIR}/latch.pio)
 # must match with executable name and source file names
 target_sources(picobeam PRIVATE 
 	main.c 
-	vga_text.c
+	vga.c
 	api.c
 )
 

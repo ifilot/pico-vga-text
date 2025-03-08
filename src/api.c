@@ -4,10 +4,35 @@ static short posx = 0;
 static short posy = 0;
 static char fg_color = WHITE;
 static char bg_color = BLACK;
+static uint32_t pixelword;
+static bool flag_pixel = false;
+static uint8_t nrbytes = 0;
 
 void parse_input(char ch) {
+
+    static uint8_t mode = MODE_TEXT;
+
+    if(flag_pixel) {
+        pixelword &= ~(0xFF << nrbytes * 8);
+        pixelword |= ((uint32_t)ch << (nrbytes * 8));
+        nrbytes++;
+
+        if(nrbytes == 4) {
+            draw_pixel_from_word(pixelword);
+            flag_pixel = false;
+            pixelword = 0;
+            nrbytes = 0;
+        }
+        return;
+    }
+
     if(ch >= 0x80) {  // check for control bytes
         switch(ch) {
+            case 0xB0:
+                flag_pixel = true;
+                pixelword = ch;
+                nrbytes++;
+            break;
             case 0x80:
                 fg_color = BLACK;
             break;
@@ -119,6 +144,7 @@ void parse_input(char ch) {
             clear_screen();
             posy = 0;
             posx = 0;
+            flag_pixel = false;
         }
     
         if(ch == '\n') {

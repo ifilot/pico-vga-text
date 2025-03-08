@@ -1,4 +1,4 @@
-#include "vga_text.h"
+#include "vga.h"
 
 // include font (obtained from Philips P2000C)
 #include "font.c"
@@ -188,5 +188,29 @@ void draw_character(short x, short y, unsigned char c, char color, char bg) {
 
             line >>= 1; // bitshift to the right to grab the next pixel
         }
+    }
+}
+
+void draw_pixel_from_word(uint32_t pixelword) {
+    // Extract X, Y, and color from pixelword (direct bit manipulation)
+    uint16_t x = (pixelword >> 8) & 0x3FF;   // X position (10 bits)
+    uint16_t y = (pixelword >> 18) & 0x3FF;  // Y position (10 bits)
+    uint8_t color = (pixelword >> 28) & 0x0F; // Color (4 bits)
+
+    // Bounds check (fast conditional with bitwise OR)
+    if ((x >= SCREENWIDTH) | (y >= SCREENHEIGHT)) return;
+
+    // Compute pixel index in the VGA data array
+    int pixel = (SCREENWIDTH * y) + x;
+    
+    // Update the VGA array (avoiding redundant shifts)
+    uint8_t *vga_byte = &vga_data_array[pixel >> 1];
+
+    if (pixel & 1) {  
+        // Odd pixel → Upper 4 bits
+        *vga_byte = (*vga_byte & TOPMASK) | (color << 4);
+    } else {  
+        // Even pixel → Lower 4 bits
+        *vga_byte = (*vga_byte & BOTTOMMASK) | color;
     }
 }

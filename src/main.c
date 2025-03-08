@@ -38,7 +38,7 @@
 #include <pico/multicore.h>
 #include <string.h>
 
-#include "vga_text.h"
+#include "vga.h"
 #include "latch.pio.h"
 #include "protothreads.h"
 #include "api.h"
