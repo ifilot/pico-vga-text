@@ -20,8 +20,8 @@ void send_char(char val, unsigned int delay) {
 
     // Pulse the latch signal (D2) to indicate data is ready
     digitalWrite(2, HIGH);
-    delayMicroseconds(delay);
     digitalWrite(2, LOW); // End latch pulse
+    delayMicroseconds(delay);
 }
 
 void handle_serial() {
@@ -40,30 +40,32 @@ void handle_serial() {
 
 void loop() {
   static uint8_t val = ' ';
-  const uint8_t delay = 120;
+  const uint8_t chardelay = 150;
+  const uint8_t longdelay = 2000;
 
   handle_serial();
 
-  send_char(0xFF, 120); // send clear screen
-  send_char(0x90, 120); // send background black
+  send_char(0xFF, longdelay); // send clear screen
+  send_char(0xA0, longdelay); // send beep
+  send_char(0x90, chardelay); // send background black
   for(uint8_t i=0x81; i<=0x8F; i++) {
-    send_char(i, delay);  // send color control character
+    send_char(i, chardelay);  // send color control character
     for(char val=' '; val <= '~'; val++) {
-      send_char(val, delay);
+      send_char(val, chardelay);
     }
   }
 
   handle_serial();
 
-  send_char(0x80, 120); // send foreground black
+  send_char(0x80, chardelay); // send foreground black
   for(uint8_t i=0x91; i<=0x9F; i++) {
-    send_char(i, delay);  // send color control character
+    send_char(i, chardelay);  // send color control character
     for(char val=' '; val <= '~'; val++) {
-      send_char(val, delay);
+      send_char(val, chardelay);
     }
   }
 
   handle_serial();
 
-  _delay_ms(5000);
+  _delay_ms(3000);
 }

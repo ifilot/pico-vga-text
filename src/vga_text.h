@@ -69,6 +69,9 @@ enum colors {BLACK, DARK_GREEN, MED_GREEN, GREEN,
 // For accessing the font library
 #define pgm_read_byte(addr) (*(const unsigned char *)(addr))
 
+extern bool flag_beep;
+extern bool flag_beeping;
+
 /**
  * @brief Initialize the screen
  * 

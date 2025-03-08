@@ -11,7 +11,7 @@ include(${PICO_SDK_PATH}/pico_sdk_init.cmake)
 # Pull in SDK (must be before project)
 include(pico_sdk_import.cmake)
 
-project(pico_firmware_vga C CXX ASM)
+project(picobeam C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 
@@ -19,22 +19,23 @@ set(CMAKE_CXX_STANDARD 17)
 pico_sdk_init()
 
 # name anything you want
-add_executable(pico_firmware_vga)
+add_executable(picobeam)
 
 # must match with pio filename and executable name from above
-pico_generate_pio_header(pico_firmware_vga ${CMAKE_CURRENT_LIST_DIR}/hsync.pio)
-pico_generate_pio_header(pico_firmware_vga ${CMAKE_CURRENT_LIST_DIR}/vsync.pio)
-pico_generate_pio_header(pico_firmware_vga ${CMAKE_CURRENT_LIST_DIR}/rgb.pio)
-pico_generate_pio_header(pico_firmware_vga ${CMAKE_CURRENT_LIST_DIR}/latch.pio)
+pico_generate_pio_header(picobeam ${CMAKE_CURRENT_LIST_DIR}/hsync.pio)
+pico_generate_pio_header(picobeam ${CMAKE_CURRENT_LIST_DIR}/vsync.pio)
+pico_generate_pio_header(picobeam ${CMAKE_CURRENT_LIST_DIR}/rgb.pio)
+pico_generate_pio_header(picobeam ${CMAKE_CURRENT_LIST_DIR}/latch.pio)
 
 # must match with executable name and source file names
-target_sources(pico_firmware_vga PRIVATE 
+target_sources(picobeam PRIVATE 
 	main.c 
 	vga_text.c
+	api.c
 )
 
 # must match with executable name
-target_link_libraries(pico_firmware_vga PRIVATE 
+target_link_libraries(picobeam PRIVATE 
 	pico_stdlib 
 	pico_bootsel_via_double_reset 
 	hardware_pio 
@@ -47,6 +48,6 @@ target_link_libraries(pico_firmware_vga PRIVATE
 )
 
 # must match with executable name
-pico_add_extra_outputs(pico_firmware_vga)
+pico_add_extra_outputs(picobeam)
 
 add_compile_options(-Ofast)

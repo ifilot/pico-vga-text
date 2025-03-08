@@ -11,6 +11,10 @@ unsigned char vga_data_array[TXCOUNT];
 // pointer to first element of the vga_data_array, used for DMA
 char *address_pointer = &vga_data_array[0];
 
+// flags to control beeper
+bool flag_beep = false;
+bool flag_beeping = false;
+
 /**
  * @brief Initialize the screen
  * 
