@@ -44,7 +44,6 @@ void loop() {
 
   handle_serial();
 
-  send_char(0xA0, delay); // send beep
   send_char(0xFF, 120); // send clear screen
   send_char(0x90, 120); // send background black
   for(uint8_t i=0x81; i<=0x8F; i++) {

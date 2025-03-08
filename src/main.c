@@ -307,11 +307,10 @@ static PT_THREAD(protothread_beeper(struct pt *pt)) {
             flag_beeping = true;
             start_time = time_us_64(); 
             pwm_set_enabled(slice, true);  // Enable PWM
-            printf("Start beeper...\n");
+            printf("BEEP!\n");
 
         PT_YIELD_UNTIL(pt, flag_beeping && ((time_us_64() - start_time) >= (200 * 1000)));
 
-            printf("Finished waiting!\n");
             pwm_set_enabled(slice, false);
             flag_beeping = false;
     }
