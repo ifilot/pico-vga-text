@@ -31,35 +31,78 @@
 #include "rgb.pio.h"
 
 // Screen width/height
-#define SCREENWIDTH 640
-#define SCREENHEIGHT 480
-#define CHARHEIGHT 12
+#define SCREENWIDTH     640     // width of the screen
+#define SCREENHEIGHT    480     // height of the screen
+#define CHARHEIGHT      12      // character width
+#define CHARWIDTH        8      // character height
 
 #define LATCH_PIN 2         // GPIO for latch signal
 #define DATA_BASE_PIN 8     // First data pin
 
-// Function to check if a specific state machine is enabled
-static bool pio_sm_is_enabled(PIO pio, uint sm) {
-    // Ensure the state machine number is valid (0 to 3)
-    if (sm > 3) return false;
+// VGA timing constants
+#define H_ACTIVE 655   // (active + frontporch - 1) - one cycle delay for mov
+#define V_ACTIVE 479   // (active - 1)
+#define RGB_ACTIVE 319 // (horizontal active)/2 - 1
+// #define RGB_ACTIVE 639 // change to this if 1 pixel/byte
 
-    // Check the SM enable bit in the CTRL register
-    return (pio->ctrl & (1u << sm)) != 0;
-}
+// Length of the pixel array, and number of DMA transfers
+#define TXCOUNT 153600 // Total pixels/2 (since we have 2 pixels per byte)
 
-// Give the I/O pins that we're using some names that make sense - usable in main()
+// Give the I/O pins that we're using some names that make sense - usable in
+// main()
 enum vga_pins {HSYNC=16, VSYNC, LO_GRN, HI_GRN, BLUE_PIN, RED_PIN} ;
 
-// We can only produce 16 (4-bit) colors, so let's give them readable names - usable in main()
+// We can only produce 16 (4-bit) colors, so let's give them readable names -
+// usable in main()
 enum colors {BLACK, DARK_GREEN, MED_GREEN, GREEN,
              DARK_BLUE, BLUE, LIGHT_BLUE, CYAN,
              RED, DARK_ORANGE, ORANGE, YELLOW, 
              MAGENTA, PINK, LIGHT_PINK, WHITE} ;
 
-// VGA primitives - usable in main
-void initVGA(void) ;
+// Bit masks for drawPixel routine
+#define TOPMASK 0b00001111
+#define BOTTOMMASK 0b11110000
+
+// For writing text
+#define tabspace 4 // number of spaces for a tab
+
+// For accessing the font library
+#define pgm_read_byte(addr) (*(const unsigned char *)(addr))
+
+/**
+ * @brief Initialize the screen
+ * 
+ */
+void init_screen(void) ;
+
+/**
+ * @brief Clear the screen
+ * 
+ */
 void clear_screen();
-void drawPixel(short x, short y, char color) ;
-void drawChar(short x, short y, unsigned char c, char color, char bg) ;
+
+/**
+ * @brief Draw a single pixel to thes creen buffer
+ * 
+ * @param x         Pixel x-coordinate
+ * @param y         Pixel y-coordinate
+ * @param color     Pixel color
+ * 
+ * 
+ * This function modifies the contents of the VGA data array, which is
+ * automatically transferred to the screen via a DMA channel.
+ */
+void draw_pixel(short x, short y, char color) ;
+
+/**
+ * @brief Draw a character onto the screen
+ * 
+ * @param x         Character x-position
+ * @param y         Character y-position
+ * @param c         Character to print
+ * @param color     Foreground color
+ * @param bg        Background color
+ */
+void draw_character(short x, short y, unsigned char c, char color, char bg) ;
 
 #endif // _VGA_TEXT_H

@@ -43,7 +43,7 @@ jobs:
       shell: bash
       run: |
         mkdir build && cd build
-        cmake -DPICO_PLATFORM=rp2350-arm-s -DPICO_BOARD=pico2 ../firmware
+        cmake -DPICO_PLATFORM=rp2350-arm-s -DPICO_BOARD=pico2 ../src
         make -j
         cp -v ${{env.FIRMWARE}}.uf2 ${{env.FIRMWARE2}}.uf2
     - name: Upload firmware .uf2 file

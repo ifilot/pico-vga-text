@@ -186,7 +186,7 @@ static PT_THREAD(protothread_graphics(struct pt *pt)) {
                     posy += CHARHEIGHT;
                     posx = 0;
                 } else {
-                    drawChar(posx, posy, ch, fg_color, bg_color);
+                    draw_character(posx, posy, ch, fg_color, bg_color);
     
                     posx += 8;
                     if (posx >= SCREENWIDTH-1) {
@@ -337,7 +337,7 @@ int main() {
     printf("\nPICO2 VGA INITIALIZED\n");
 
     // Initialize VGA display
-    initVGA();
+    init_screen();
 
     // Start core 1 processing
     multicore_reset_core1();

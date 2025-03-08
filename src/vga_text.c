@@ -1,41 +1,21 @@
 #include "vga_text.h"
 
+// include font (obtained from Philips P2000C)
 #include "font.c"
 
-// VGA timing constants
-#define H_ACTIVE 655   // (active + frontporch - 1) - one cycle delay for mov
-#define V_ACTIVE 479   // (active - 1)
-#define RGB_ACTIVE 319 // (horizontal active)/2 - 1
-// #define RGB_ACTIVE 639 // change to this if 1 pixel/byte
-
-// Length of the pixel array, and number of DMA transfers
-#define TXCOUNT 153600 // Total pixels/2 (since we have 2 pixels per byte)
-
-// Pixel color array that is DMA's to the PIO machines and
-// a pointer to the ADDRESS of this color array.
-// Note that this array is automatically initialized to all 0's (black)
+// Pixel color array that is DMA's to the PIO machines and a pointer to the
+// ADDRESS of this color array. Note that this array is automatically
+// initialized to all 0's (black)
 unsigned char vga_data_array[TXCOUNT];
+
+// pointer to first element of the vga_data_array, used for DMA
 char *address_pointer = &vga_data_array[0];
 
-// Bit masks for drawPixel routine
-#define TOPMASK 0b00001111
-#define BOTTOMMASK 0b11110000
-
-// For drawLine
-#define swap(a, b)   \
-    {                \
-        short t = a; \
-        a = b;       \
-        b = t;       \
-    }
-
-// For writing text
-#define tabspace 4 // number of spaces for a tab
-
-// For accessing the font library
-#define pgm_read_byte(addr) (*(const unsigned char *)(addr))
-
-void initVGA() {
+/**
+ * @brief Initialize the screen
+ * 
+ */
+void init_screen() {
     // Choose which PIO instance to use (there are two instances, each with 4 state machines)
     PIO pio = pio0;
 
@@ -44,11 +24,12 @@ void initVGA() {
     // instruction memory where there is enough space for our program. We need
     // to remember these locations!
     //
-    // We only have 32 instructions to spend! If the PIO programs contain more than
-    // 32 instructions, then an error message will get thrown at these lines of code.
+    // We only have 32 instructions to spend! If the PIO programs contain more
+    // than 32 instructions, then an error message will get thrown at these
+    // lines of code.
     //
-    // The program name comes from the .program part of the pio file
-    // and is of the form <program name_program>
+    // The program name comes from the .program part of the pio file and is of
+    // the form <program name_program>
     uint hsync_offset = pio_add_program(pio, &hsync_program);
     uint vsync_offset = pio_add_program(pio, &vsync_program);
     uint rgb_offset =   pio_add_program(pio, &rgb_program);
@@ -59,9 +40,10 @@ void initVGA() {
     uint rgb_sm = 2;
 
     // Call the initialization functions that are defined within each PIO file.
-    // Why not create these programs here? By putting the initialization function in
-    // the pio file, then all information about how to use/setup that state machine
-    // is consolidated in one place. Here in the C, we then just import and use it.
+    // Why not create these programs here? By putting the initialization
+    // function in the pio file, then all information about how to use/setup
+    // that state machine is consolidated in one place. Here in the C, we then
+    // just import and use it.
     hsync_program_init(pio, hsync_sm, hsync_offset, HSYNC);
     vsync_program_init(pio, vsync_sm, vsync_offset, VSYNC);
     rgb_program_init(pio, rgb_sm, rgb_offset, LO_GRN);
@@ -110,54 +92,74 @@ void initVGA() {
         false                              // Don't start immediately.
     );
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
+    // INITIALIZE STATE MACHINES
+    ////////////////////////////////////////////////////////////////////////////
 
-    // Initialize PIO state machine counters. This passes the information to the state machines
-    // that they retrieve in the first 'pull' instructions, before the .wrap_target directive
-    // in the assembly. Each uses these values to initialize some counting registers.
+    // Initialize PIO state machine counters. This passes the information to the
+    // state machines that they retrieve in the first 'pull' instructions,
+    // before the .wrap_target directive in the assembly. Each uses these values
+    // to initialize some counting registers.
     pio_sm_put_blocking(pio, hsync_sm, H_ACTIVE);
     pio_sm_put_blocking(pio, vsync_sm, V_ACTIVE);
     pio_sm_put_blocking(pio, rgb_sm, RGB_ACTIVE);
 
-    // Start the two pio machine IN SYNC
-    // Note that the RGB state machine is running at full speed,
-    // so synchronization doesn't matter for that one. But, we'll
-    // start them all simultaneously anyway.
+    // Start the two pio machine IN SYNC Note that the RGB state machine is
+    // running at full speed, so synchronization doesn't matter for that one.
+    // But, we'll start them all simultaneously anyway.
     pio_enable_sm_mask_in_sync(pio, ((1u << hsync_sm) | (1u << vsync_sm) | (1u << rgb_sm)));
 
     // Start DMA channel 0. Once started, the contents of the pixel color array
-    // will be continously DMA's to the PIO machines that are driving the screen.
-    // To change the contents of the screen, we need only change the contents
-    // of that array.
+    // will be continously DMA's to the PIO machines that are driving the
+    // screen. To change the contents of the screen, we need only change the
+    // contents of that array.
     dma_start_channel_mask((1u << rgb_chan_0));
 }
 
+/**
+ * @brief Clear the screen
+ * 
+ */
 void clear_screen() {
     memset(vga_data_array, 0x00, TXCOUNT);
 }
 
-// Function to draw a pixel on the screen with a specified color.
-// This function modifies the contents of the VGA data array, which is
-// automatically transferred to the screen via a DMA channel.
-void drawPixel(short x, short y, char color) {
+/**
+ * @brief Draw a single pixel to thes creen buffer
+ * 
+ * @param x         Pixel x-coordinate
+ * @param y         Pixel y-coordinate
+ * @param color     Pixel color
+ * 
+ * 
+ * This function modifies the contents of the VGA data array, which is
+ * automatically transferred to the screen via a DMA channel.
+ */
+void draw_pixel(short x, short y, char color) {
     if((x > 639) | (x < 0) | (y > 479) | (y < 0) ) return;
 
-    // Compute the pixel index in the VGA data array
+    // compute the pixel index in the VGA data array
     int pixel = ((640 * y) + x);
 
-    // Determine if the pixel is stored in the upper or lower 4 bits of the byte
-    if (pixel & 1) { // Odd pixel (upper 4 bits)
+    // determine if the pixel is stored in the upper or lower 4 bits of the byte
+    if (pixel & 1) {    // odd pixel (upper 4 bits)
         vga_data_array[pixel >> 1] = (vga_data_array[pixel >> 1] & TOPMASK) | (color << 4);
     }
-    else { // Even pixel (lower 4 bits)
+    else {              // even pixel (lower 4 bits)
         vga_data_array[pixel >> 1] = (vga_data_array[pixel >> 1] & BOTTOMMASK) | (color);
     }
 }
 
-// Function to draw a character on the screen at a given position with
-// foreground and background colors; assume 6x8 font
-void drawChar(short x, short y, unsigned char c, char color, char bg) {
+/**
+ * @brief Draw a character onto the screen
+ * 
+ * @param x         Character x-position
+ * @param y         Character y-position
+ * @param c         Character to print
+ * @param color     Foreground color
+ * @param bg        Background color
+ */
+void draw_character(short x, short y, unsigned char c, char color, char bg) {
     char i, j;
 
     // loop over rows
@@ -174,12 +176,13 @@ void drawChar(short x, short y, unsigned char c, char color, char bg) {
         // Loop through each column of the character (8 columns per character)
         for (j = 0; j < 8; j++) {
             if (line & 0x1) { // If the bit is set, draw foreground color pixel
-                drawPixel(x + j, y + i, color);
+                draw_pixel(x + j, y + i, color);
             }
             else if (bg != color) { // If the bit is not set, draw background color
-                drawPixel(x + j, y + i, bg);
+                draw_pixel(x + j, y + i, bg);
             }
-            line >>= 1; // Shift to the next bit
+
+            line >>= 1; // bitshift to the right to grab the next pixel
         }
     }
 }
