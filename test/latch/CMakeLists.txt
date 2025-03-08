@@ -4,10 +4,8 @@ cmake_minimum_required(VERSION 3.13...3.27)
 set(PICO_BOARD pico2)
 set(PICO_PLATFORM rp2350-arm-s)
 
-# initialize pico-sdk from GIT
-set(PICO_SDK_PATH /opt/pico/pico-sdk)
-
-# Initialize the SDK
+# initialize pico-sdk
+set(PICO_SDK_PATH /opt/pico-sdk)
 include(${PICO_SDK_PATH}/pico_sdk_init.cmake)
 
 project(latch_test C CXX ASM)

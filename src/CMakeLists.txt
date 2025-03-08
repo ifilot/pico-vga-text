@@ -4,9 +4,9 @@ cmake_minimum_required(VERSION 3.13...3.27)
 set(PICO_BOARD pico2)
 set(PICO_PLATFORM rp2350-arm-s)
 
-# initialize pico-sdk from GIT
-# (note this can come from environment, CMake cache etc)
-set(PICO_SDK_FETCH_FROM_GIT on)
+# initialize pico-sdk
+set(PICO_SDK_PATH /opt/pico-sdk)
+include(${PICO_SDK_PATH}/pico_sdk_init.cmake)
 
 # Pull in SDK (must be before project)
 include(pico_sdk_import.cmake)

@@ -29,3 +29,22 @@ latch interface, which updates the screen in real-time. The VGA signal is
 generated at the specified resolution and color depth, with a refresh rate of
 approximately 72 Hz. Debugging information can be sent via the UART interface
 for easy monitoring and troubleshooting.
+
+## Compilation instructions
+
+### Toolchain
+
+```bash
+sudo apt install cmake gcc-arm-none-eabi libnewlib-arm-none-eabi build-essential libstdc++-arm-none-eabi-newlib
+sudo git clone https://github.com/raspberrypi/pico-sdk.git /opt/pico-sdk
+sudo git -C /opt/pico-sdk submodule update --init
+RUN 'export PICO_SDK_PATH=/opt/pico-sdk' | tee -a /etc/profile.d/pico-sdk.sh
+```
+
+### Compiling
+
+```bash
+mkdir build && cd build
+cmake ../src
+make -j
+```
